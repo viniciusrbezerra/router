@@ -73,7 +73,12 @@ trait RouterTrait
         }
 
         if ($this->httpMethod == "POST") {
-            $this->data = filter_input_array(INPUT_POST, FILTER_DEFAULT);
+            if(isset(getallheaders()['Content-Type']) && getallheaders()['Content-Type'] == 'application/json'){
+                $inputText = file_get_contents('php://input', false, null, 0, $_SERVER['CONTENT_LENGTH']);
+                $this->data = $inputText ? filter_var_array(json_decode($inputText, true), FILTER_DEFAULT) : null;
+            }else{
+                $this->data = $post;
+            }
 
             unset($this->data["_method"]);
             return;
@@ -81,7 +86,13 @@ trait RouterTrait
 
         if (in_array($this->httpMethod, ["PUT", "PATCH", "DELETE"]) && !empty($_SERVER['CONTENT_LENGTH'])) {
             parse_str(file_get_contents('php://input', false, null, 0, $_SERVER['CONTENT_LENGTH']), $putPatch);
-            $this->data = $putPatch;
+
+            if(getallheaders()['Content-Type'] == 'application/json'){
+                $inputText = file_get_contents('php://input', false, null, 0, $_SERVER['CONTENT_LENGTH']);
+                $this->data = filter_var_array(json_decode($inputText, true), FILTER_DEFAULT);
+            }else{
+                $this->data = $putPatch;
+            }
 
             unset($this->data["_method"]);
             return;
